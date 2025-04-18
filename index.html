@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Management Console</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide-react@latest/umd/lucide-react.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom CSS for the message box */
+        #message-box {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #f0fdf4;
+            color: #15803d;
+            padding: 16px;
+            border-radius: 6px;
+            border: 1px solid #16a34a;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+        #message-box.show {
+            display: block;
+        }
+
+        /* Styles for the sidebar */
+        .sidebar {
+            width: 250px; /* Increased width of the sidebar */
+            background-color: #f3f4f6; /* Tailwind's gray-100 */
+            height: 100vh; /* Full height of the viewport */
+            position: fixed; /* Fixed position, stays in place during scrolling */
+            top: 0;
+            left: 0;
+            padding-top: 20px;
+            border-right: 1px solid #e5e7eb; /* Tailwind's border-gray-200 */
+            transition: transform 0.3s ease-in-out; /* Smooth transition for collapsing */
+            z-index: 20; /* Ensure it's above other elements */
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-250px); /* Hide the sidebar */
+        }
+
+        .sidebar-header {
+            padding: 16px;
+            text-align: center;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .sidebar-menu {
+            padding: 10px;
+        }
+
+        .sidebar-menu li {
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+
+        .sidebar-menu li:hover {
+            background-color: #d1d5db; /* Tailwind's gray-300 on hover */
+        }
+
+        .sidebar-menu li.active {
+            background-color: #60a5fa; /* Tailwind's blue-400 for active */
+            color: white;
+        }
+
+        .main-content {
+            margin-left: 250px; /* Make space for the sidebar */
+            padding: 20px;
+            flex-grow: 1; /* Allow the main content to take up remaining space */
+            transition: margin-left 0.3s ease-in-out; /* Smooth transition when sidebar collapses */
+        }
+
+        .main-content.collapsed {
+            margin-left: 0; /* When sidebar is collapsed, no left margin */
+        }
+
+        #toggle-sidebar-button {
+            position: fixed; /* Fix button to the top left */
+            top: 10px;
+            left: 260px; /* Initially, next to the sidebar */
+            background-color: #f3f4f6; /* Tailwind's gray-100 */
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 1px solid #e5e7eb;
+            z-index: 30; /* Sit on top of everything */
+            transition: left 0.3s ease-in-out; /* Smooth transition with sidebar */
+        }
+
+        #toggle-sidebar-button.collapsed {
+            left: 10px; /* Move button to the left when sidebar is collapsed */
+        }
+
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+    <header class="bg-blue-500 text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-semibold">Management Console</h1>
+        </div>
+    </header>
+
+    <div class="flex flex-row">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2 class="text-lg font-semibold">Navigation</h2>
+            </div>
+            <ul class="sidebar-menu" id="sidebar-menu">
+                <li data-section="dashboard" class="active">Dashboard</li>
+                <li data-section="users">Users</li>
+                <li data-section="applications">Applications</li>
+                <li data-section="settings">Settings</li>
+            </ul>
+        </aside>
+
+        <main class="main-content" id="main-content">
+            <button id="toggle-sidebar-button">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-menu"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+            </button>
+
+            <div id="dashboard" class="section">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800">Dashboard</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="bg-white rounded-lg shadow-md p-4">
+                        <h3 class="text-lg font-semibold mb-2 text-gray-700">Total Users</h3>
+                        <p class="text-xl text-blue-500" id="total-users">1,250</p>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-md p-4">
+                        <h3 class="text-lg font-semibold mb-2 text-gray-700">Total Applications</h3>
+                        <p class="text-xl text-green-500" id="total-applications">75</p>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-md p-4">
+                        <h3 class="text-lg font-semibold mb-2 text-gray-700">Active Sessions</h3>
+                        <p class="text-xl text-purple-500" id="active-sessions">320</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="users" class="section hidden">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800">Users</h2>
+                <div class="bg-white rounded-lg shadow-md p-4">
+                    <div class="mb-4">
+                        <button id="add-user-button" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus-circle"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+                            Add User
+                        </button>
+                    </div>
+                    <table class="min-w-full" id="user-table">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">John Smith</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">john.smith@example.com</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Admin</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <button class="edit-user-button text-blue-600 hover:text-blue-900">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-edit-3"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L13.5 7a2.121 2.121 0 0 1 3-3z"/></svg>
+                                    </button>
+                                    <button class="delete-user-button text-red-600 hover:text-red-900">
+                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Jane Doe</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">jane.doe@example.com</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Teacher</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <button class="edit-user-button text-blue-600 hover:text-blue-900">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-edit-3"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L13.5 7a2.121 2.121 0 0 1 3-3z"/></svg>
+                                    </button>
+                                    <button class="delete-user-button text-red-600 hover:text-red-900">
+                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="applications" class="section hidden">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800">Applications</h2>
+                <div class="bg-white rounded-lg shadow-md p-4">
+                     <div class="mb-4">
+                        <button id="add-application-button" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus-circle"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+                            Add Application
+                        </button>
+                    </div>
+                    <table class="min-w-full" id="application-table">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Google Classroom</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Learning Management System</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-green-500">Active</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <button class="edit-application-button text-blue-600 hover:text-blue-900">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-edit-3"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L13.5 7a2.121 2.121 0 0 1 3-3z"/></svg>
+                                    </button>
+                                    <button class="delete-application-button text-red-600 hover:text-red-900">
+                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Zoom</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Video Conferencing</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-green-500">Active</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <button class="edit-application-button text-blue-600 hover:text-blue-900">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-edit-3"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L13.5 7a2.121 2.121 0 0 1 3-3z"/></svg>
+                                    </button>
+                                    <button class="delete-application-button text-red-600 hover:text-red-900">
+                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="settings" class="section hidden">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800">Settings</h2>
+                <div class="bg-white rounded-lg shadow-md p-6 space-y-4">
+                    <div>
+                        <label for="siteName" class="block text-gray-700 text-sm font-bold mb-2">Site Name</label>
+                        <input type="text" id="siteName" value="ClassLink" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                    </div>
+                    <div>
+                        <label for="defaultRole" class="block text-gray-700 text-sm font-bold mb-2">Default Role</label>
+                        <select id="defaultRole" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                            <option value="teacher">Teacher</option>
+                            <option value="student">Student</option>
+                            <option value="admin">Administrator</option>
+                        </select>
+                    </div>
+                    <button id="save-settings-button" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-save"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        Save Settings
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="message-box"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const navLinks = document.querySelectorAll('.sidebar-menu li');
+            const sections = document.querySelectorAll('.main-content .section');
+            const messageBox = document.getElementById('message-box');
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+            const toggleSidebarButton = document.getElementById('toggle-sidebar-button');
+            const sidebarMenu = document.getElementById('sidebar-menu');
+
+
+            function showSection(sectionId) {
+                sections.forEach(section => {
+                    section.classList.add('hidden');
+                });
+                const targetSection = document.getElementById(sectionId);
+                if (targetSection) {
+                    targetSection.classList.remove('hidden');
+                }
+
+                // Update active class in sidebar
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.dataset.section === sectionId) {
+                        link.classList.add('active');
+                    }
+                });
+            }
+
+            function showMessage(message, type = 'success') {
+                messageBox.textContent = message;
+                messageBox.className = `fixed top-4 left-1/2 transform -translate-x-1/2 bg-${type === 'success' ? 'green' : 'red'}-100 text-${type === 'success' ? 'green' : 'red'}-700 border border-${type === 'success' ? 'green' : 'red'}-400 px-4 py-2 rounded shadow-md`;
+                messageBox.classList.add('show');
+                setTimeout(() => {
+                    messageBox.classList.remove('show');
+                }, 3000);
+            }
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(event) {
+                    const targetId = this.dataset.section;
+                    showSection(targetId);
+                });
+            });
+
+            // Show the dashboard section by default
+            showSection('dashboard');
+
+            // --- User Management ---
+            const addUserButton = document.getElementById('add-user-button');
+            const userTable = document.getElementById('user-table');
+
+            addUserButton.addEventListener('click', () => {
+                // In a real application, you'd have a modal or form here.
+                // For this example, we'll just add a new row directly.
+                const newRow = userTable.insertRow();
+                const nameCell = newRow.insertCell();
+                const emailCell = newRow.insertCell();
+                const roleCell = newRow.insertCell();
+                const actionsCell = newRow.insertCell();
+
+                nameCell.innerHTML = '<input type="text" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">';
+                emailCell.innerHTML = '<input type="email" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">';
+                roleCell.innerHTML = `<select class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                                        <option value="teacher">Teacher</option>
+                                        <option value="student">Student</option>
+                                        <option value="admin">Administrator</option>
+                                      </select>`;
+                actionsCell.innerHTML = `<button class="save-user-button bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Save</button>
+                                       <button class="cancel-user-button bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Cancel</button>`;
+
+                const saveButton = actionsCell.querySelector('.save-user-button');
+                const cancelButton = actionsCell.querySelector('.cancel-user-button');
+
+                saveButton.addEventListener('click', () => {
+                    const name = nameCell.querySelector('input').value;
+                    const email = emailCell.querySelector('input').value;
+                    const role = roleCell.querySelector('select').value;
+
+                    if (name && email) { // Basic validation
+                        nameCell.textContent = name;
+                        emailCell.textContent = email;
+                        roleCell.textContent = role;
+                        actionsCell.innerHTML = `<button class="edit-user-button text-blue-600 hover:text-blue-900">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-edit-3"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L13.5 7a2.121 2.121 0 0 1 3-3z"/></svg>
+                                                </button>
+                                                <button class="delete-user-button text-red-600 hover:text-red-900">
+                                                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                                                </button>`;
+                        showMessage('User saved successfully!', 'success');
+                        initializeUserTableActions(); // Attach event listeners to the new buttons
+                    } else {
+                        showMessage('Please enter both name and email!', 'error');
+                    }
+                });
+
+                cancelButton.addEventListener('click', () => {
+                    newRow.remove();
+                    showMessage('User creation cancelled!', 'warning');
+                });
+            });
+
+            function initializeUserTableActions() {
+                const editButtons = document.querySelectorAll('.edit-user-button');
+                const deleteButtons = document.querySelectorAll('.delete-user-button');
+
+                editButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        const row = button.closest('tr');
+                        const nameCell = row.cells[0];
+                        const emailCell = row.cells[1];
+                        const roleCell = row.cells[2];
+                        const actionsCell = row.cells[3];
+
+                        const name = nameCell.textContent;
+                        const email = emailCell.textContent;
+                        const role = roleCell.textContent;
+
+                        nameCell.innerHTML = `<input type="text" value="${name}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">`;
+                        emailCell.innerHTML = `<input type="email" value="${email}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">`;
+                        roleCell.innerHTML = `<select class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                                                <option value="teacher" ${role === 'Teacher' ? 'selected' : ''}>Teacher</option>
+                                                <option value="student" ${role === 'Student' ? 'selected' : ''}>Student</option>
+                                                <option value="admin" ${role === 'Admin' ? 'selected' : ''}>Administrator</option>
+                                              </select>`;
+                        actionsCell.innerHTML = `<button class="save-user-button bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Save</button>
+                                               <button class="cancel-user-button bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Cancel</button>`;
+
+                        const saveButton = actionsCell.querySelector('.save-user-button');
+                        const cancelButton = actionsCell.querySelector('.cancel-user-button');
+
+                        saveButton.addEventListener('click', () => {
+                            const newName = nameCell.querySelector('input').value;
+                            const newEmail = emailCell.querySelector('input').value;
+                            const newRole = roleCell.querySelector('select').value;
+
+                            if (newName && newEmail) {
+                                nameCell.textContent = newName;
+                                emailCell.textContent = newEmail;
+                                roleCell.textContent = newRole;
+                                actionsCell.innerHTML = `<button class="edit-user-button text-blue-600 hover:text-blue-900">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-edit-3"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L13.5 7a2.121 2.121 0 0 1 3-3z"/></svg>
+                                                        </button>
+                                                        <button class="delete-user-button text-red-600 hover:text-red-900">
+                                                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                                                        </button>`;
+                                showMessage('User updated successfully!', 'success');
+                                initializeUserTableActions();
+                            } else {
+                                showMessage('Please enter both name and email!', 'error');
+                            }
+                        });
+
+                        cancelButton.addEventListener('click', () => {
+                            nameCell.textContent = name;
+                            emailCell.textContent = email;
+                            roleCell.textContent = role;
+                            actionsCell.innerHTML = `<button class="edit-user-button text-blue-600 hover:text-blue-900">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-edit-3"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L13.5 7a2.121 2.121 0 0 1 3-3z"/></svg>
+                                                    </button>
+                                                    <button class="delete-user-button text-red-600 hover:text-red-900">
+                                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                                                    </button>`;
+                            showMessage('User update cancelled!', 'warning');
+                            initializeUserTableActions();
+                        });
+                    });
+                });
+
+                deleteButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        const row = button.closest('tr');
+                        row.remove();
+                        showMessage('User deleted successfully!', 'success');
+                    });
+                });
+            }
+
+            initializeUserTableActions();
+
+            // --- Application Management ---
+            const addApplicationButton = document.getElementById('add-application-button');
+            const applicationTable = document.getElementById('application-table');
+
+            addApplicationButton.addEventListener('click', () => {
+                const newRow = applicationTable.insertRow();
+                const nameCell = newRow.insertCell();
+                const descriptionCell = newRow.insertCell();
+                const statusCell = newRow.insertCell();
+                const actionsCell = newRow.insertCell();
+
+                nameCell.innerHTML = '<input type="text" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">';
+                descriptionCell.innerHTML = '<input type="text" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">';
+                statusCell.innerHTML = `<select class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                                            <option value="active">Active</option>
+                                            <option value="inactive">Inactive</option>
+                                          </select>`;
+                actionsCell.innerHTML = `<button class="save-application-button bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Save</button>
+                                       <button class="cancel-application-button bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Cancel</button>`;
+
+                const saveButton = actionsCell.querySelector('.save-application-button');
+                const cancelButton = actionsCell.querySelector('.cancel-application-button');
+
+                saveButton.addEventListener('click', () => {
+                    const name = nameCell.querySelector('input').value;
+                    const description = descriptionCell.querySelector('input').value;
+                    const status = statusCell.querySelector('select').value;
+
+                    if (name && description) {
+                        nameCell.textContent = name;
+                        descriptionCell.textContent = description;
+                        statusCell.textContent = status;
+                        actionsCell.innerHTML = `<button class="edit-application-button text-blue-600 hover:text-blue-900">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-edit-3"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L13.5 7a2.121 2.121 0 0 1 3-3z"/></svg>
+                                                </button>
+                                                <button class="delete-application-button text-red-600 hover:text-red-900">
+                                                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                                                </button>`;
+                        showMessage('Application saved successfully!', 'success');
+                        initializeApplicationTableActions();
+                    } else {
+                        showMessage('Please enter both name and description!', 'error');
+                    }
+                });
+
+                cancelButton.addEventListener('click', () => {
+                    newRow.remove();
+                    showMessage('Application creation cancelled!', 'warning');
+                });
+            });
+
+            function initializeApplicationTableActions() {
+                const editButtons = document.querySelectorAll('.edit-application-button');
+                const deleteButtons = document.querySelectorAll('.delete-application-button');
+
+                editButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        const row = button.closest('tr');
+                        const nameCell = row.cells[0];
+                        const descriptionCell = row.cells[1];
+                        const statusCell = row.cells[2];
+                        const actionsCell = row.cells[3];
+
+                        const name = nameCell.textContent;
+                        const description = descriptionCell.textContent;
+                        const status = statusCell.textContent;
+
+                        nameCell.innerHTML = `<input type="text" value="${name}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">`;
+                        descriptionCell.innerHTML = `<input type="text" value="${description}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">`;
+                        statusCell.innerHTML = `<select class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                                                    <option value="active" ${status === 'Active' ? 'selected' : ''}>Active</option>
+                                                    <option value="inactive" ${status === 'Inactive' ? 'selected' : ''}>Inactive</option>
+                                                  </select>`;
+                        actionsCell.innerHTML = `<button class="save-application-button bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Save</button>
+                                               <button class="cancel-application-button bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Cancel</button>`;
+
+                        const saveButton = actionsCell.querySelector('.save-application-button');
+                        const cancelButton = actionsCell.querySelector('.cancel-application-button');
+
+                        saveButton.addEventListener('click', () => {
+                            const newName = nameCell.querySelector('input').value;
+                            const newDescription = descriptionCell.querySelector('input').value;
+                            const newStatus = statusCell.querySelector('select').value;
+
+                            if (newName && newDescription) {
+                                nameCell.textContent = newName;
+                                descriptionCell.textContent = newDescription;
+                                statusCell.textContent = newStatus;
+                                actionsCell.innerHTML = `<button class="edit-application-button text-blue-600 hover:text-blue-900">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-edit-3"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L13.5 7a2.121 2.121 0 0 1 3-3z"/></svg>
+                                                        </button>
+                                                        <button class="delete-application-button text-red-600 hover:text-red-900">
+                                                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                                                        </button>`;
+                                showMessage('Application updated successfully!', 'success');
+                                initializeApplicationTableActions();
+                            } else {
+                                showMessage('Please enter both name and description!', 'error');
+                            }
+                        });
+
+                        cancelButton.addEventListener('click', () => {
+                            nameCell.textContent = name;
+                            descriptionCell.textContent = description;
+                            statusCell.textContent = status;
+                            actionsCell.innerHTML = `<button class="edit-application-button text-blue-600 hover:text-blue-900">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-edit-3"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L13.5 7a2.121 2.121 0 0 1 3-3z"/></svg>
+                                                    </button>
+                                                    <button class="delete-application-button text-red-600 hover:text-red-900">
+                                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                                                    </button>`;
+                            showMessage('Application update cancelled!', 'warning');
+                            initializeApplicationTableActions();
+                        });
+                    });
+                });
+
+                deleteButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        const row = button.closest('tr');
+                        row.remove();
+                        showMessage('Application deleted successfully!', 'success');
+                    });
+                });
+            }
+
+            initializeApplicationTableActions();
+
+            // --- Settings Management ---
+            const saveSettingsButton = document.getElementById('save-settings-button');
+            const siteNameInput = document.getElementById('siteName');
+            const defaultRoleSelect = document.getElementById('defaultRole');
+
+            saveSettingsButton.addEventListener('click', () => {
+                const siteName = siteNameInput.value;
+                const defaultRole = defaultRoleSelect.value;
+                // In a real application, you would send this data to a server.
+                showMessage(`Settings saved! Site Name: ${siteName}, Default Role: ${defaultRole}`, 'success');
+            });
+
+            // --- Sidebar Toggle ---
+            toggleSidebarButton.addEventListener('click', () => {
+                sidebar.classList.toggle('collapsed');
+                mainContent.classList.toggle('collapsed');
+                toggleSidebarButton.classList.toggle('collapsed');
+            });
+        });
+    </script>
+</body>
+</html>
